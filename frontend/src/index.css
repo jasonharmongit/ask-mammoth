@@ -3,6 +3,7 @@
 :root {
   color: #000000;
   background-color: #e8e8e8;
+  --font-jetbrains: "JetBrains Mono", monospace;
 }
 
 h1 {
@@ -12,5 +13,30 @@ h1 {
 }
 
 button {
-  @apply cursor-pointer;
+  @apply cursor-pointer rounded p-2;
+}
+
+@keyframes rainbow-radial-move {
+  0% {
+    background-position: 50% 0%;
+  }
+  100% {
+    background-position: 50% 100%;
+  }
+}
+
+.magic {
+  @apply relative rounded-lg bg-red-500 p-6;
+}
+.magic::after {
+  @apply absolute inset-0 bg-yellow-500;
+  content: "";
+  border-radius: inherit;
+  filter: blur(2em);
+}
+
+@layer utilities {
+  .font-jetbrains {
+    font-family: var(--font-jetbrains);
+  }
 }
