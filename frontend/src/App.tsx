@@ -4,11 +4,21 @@ import Header from "./header";
 function App() {
   const handleClick = useCallback(async () => {
     try {
-      const res = await fetch("/api/hello");
+      console.log("sending message 'Hello, who are you?' to the assistant");
+      const res = await fetch("/api/assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: "Hello, who are you?" },
+          ],
+        }),
+      });
       const data = await res.json();
-      console.log(data);
+      console.log("assistant response:", data);
     } catch (err) {
-      console.error("Error fetching /api/hello:", err);
+      console.error("Error fetching /api/assistant:", err);
     }
   }, []);
 
