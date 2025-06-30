@@ -1,5 +1,4 @@
 import { Storage } from "@google-cloud/storage";
-import { readFile } from "fs/promises";
 import OpenAI from "openai";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -17,9 +16,16 @@ let cachedInstructions: string | null = null;
 
 async function getInstructions() {
   if (cachedInstructions) return cachedInstructions;
-  const promptPath = path.join(__dirname, "oracle-prompt.md");
-  cachedInstructions = await readFile(promptPath, "utf-8");
-  return cachedInstructions;
+  // Download oracle-prompt.md from the GCP bucket
+  const file = storage.bucket(BUCKET_NAME).file("oracle-prompt.md");
+  try {
+    const [contents] = await file.download();
+    cachedInstructions = contents.toString("utf-8");
+    return cachedInstructions;
+  } catch (err) {
+    console.error("[oracle] error fetching oracle-prompt.md from GCP bucket:", err);
+    throw new Error("Failed to load instructions from GCP bucket");
+  }
 }
 
 // Tool: fetchCandidateProfile
