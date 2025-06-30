@@ -23,12 +23,16 @@ const oraclePath = path.join(__dirname, "oracle.ts");
 app.use(express.json());
 app.use(cookieParser());
 
-const allowedOriginPattern = /^https:\/\/ask-mammoth.*\.vercel\.app$/;
+const allowedOrigins = [
+  "https://ask-mammoth.xyz",
+  "https://www.ask-mammoth.xyz",
+  "http://localhost:5173", // for local dev
+];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || origin === "http://localhost:5173" || allowedOriginPattern.test(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -47,9 +51,10 @@ app.post("/api/authenticate", (req: Request, res: Response) => {
   if (accessToken === ACCESS_TOKEN) {
     const sessionToken = jwt.sign({ authenticated: true }, JWT_SECRET, { expiresIn: "1h" });
     res.cookie("sessionToken", sessionToken, {
+      domain: ".ask-mammoth.xyz",
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 3600000 * 24 * 3,
       path: "/",
     });
