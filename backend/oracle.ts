@@ -58,81 +58,106 @@ export async function streamAssistantResponse({
     { role: "user", content: userMessage },
   ];
 
-  // Define the function for the chat API
-  const functions = [
+  // Define the tool for the chat API (using new tools interface)
+  const tools = [
     {
-      name: "fetchCandidateProfile",
-      description: "Fetches the markdown profile for a candidate by first name from Google Cloud Storage.",
-      parameters: {
-        type: "object",
-        properties: {
-          firstName: { type: "string", description: "The candidate's first name." },
+      type: "function" as const,
+      function: {
+        name: "fetchCandidateProfile",
+        description: "Fetches the markdown profile for a candidate by first name from Google Cloud Storage.",
+        parameters: {
+          type: "object",
+          properties: {
+            firstName: { type: "string", description: "The candidate's first name." },
+          },
+          required: ["firstName"],
         },
-        required: ["firstName"],
       },
     },
   ];
 
-  // Helper to handle function calls
-  async function handleFunctionCall(functionCall: any) {
-    if (functionCall.name === "fetchCandidateProfile") {
-      const args = functionCall.arguments;
+  // Helper to handle tool calls
+  async function handleToolCall(toolCall: any) {
+    if (toolCall.function && toolCall.function.name === "fetchCandidateProfile") {
+      const args = toolCall.function.arguments;
       const parsedArgs = typeof args === "string" ? JSON.parse(args) : args;
       const result = await fetchCandidateProfile(parsedArgs);
       return {
-        role: "function",
-        name: functionCall.name,
+        role: "tool",
+        tool_call_id: toolCall.id,
+        name: toolCall.function.name,
         content: result,
       };
     }
     return {
-      role: "function",
-      name: functionCall.name,
+      role: "tool",
+      tool_call_id: toolCall.id,
+      name: toolCall.function?.name || "unknown",
       content: "Tool not implemented.",
     };
   }
 
-  // Main loop: handle function calls if present
-  let functionCall = null;
-  let functionCallDetected = false;
+  // Main loop: handle tool calls if present
+  let toolCalls = null;
+  let toolCallDetected = false;
   let currentMessages = messages;
 
   do {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: currentMessages,
-      functions,
-      function_call: "auto",
+      tools,
+      tool_choice: "auto",
       stream: true,
     });
 
-    functionCall = null;
+    toolCalls = [];
+    toolCallDetected = false;
+    let toolCallsMap: Record<string, any> = {};
+
     for await (const chunk of response) {
+      console.log("[oracle] raw chunk:", JSON.stringify(chunk, null, 2));
       const choice = chunk.choices[0];
       if (choice.delta && choice.delta.tool_calls) {
-        functionCallDetected = true;
-        functionCall = choice.delta.tool_calls[0].function;
-        console.log("[oracle] functionCall:", functionCall);
+        toolCallDetected = true;
+        // Accumulate tool calls (array)
+        for (const toolCall of choice.delta.tool_calls) {
+          if (toolCall.id && toolCall.function) {
+            if (!toolCallsMap[toolCall.id]) {
+              toolCallsMap[toolCall.id] = { ...toolCall, function: { ...toolCall.function, arguments: "" } };
+            }
+            if (toolCall.function.arguments) {
+              toolCallsMap[toolCall.id].function.arguments += toolCall.function.arguments;
+            }
+          }
+        }
       } else if (choice.delta && choice.delta.content) {
         onDelta({ type: "chunk", value: choice.delta.content });
+        console.log("[oracle] content:", choice.delta.content);
+      } else {
+        console.log("[oracle] no delta");
       }
     }
 
-    if (functionCall) {
-      // Handle the function call and loop again with the function result
-      const functionMessage = await handleFunctionCall(functionCall);
-      currentMessages = [
-        ...currentMessages,
-        {
+    // Convert toolCallsMap to array
+    toolCalls = Object.values(toolCallsMap);
+
+    if (toolCallDetected && toolCalls.length > 0) {
+      // Handle each tool call and loop again with the tool result(s)
+      const toolMessages = [];
+      for (const toolCall of toolCalls) {
+        const toolMessage = await handleToolCall(toolCall);
+        toolMessages.push({
           role: "assistant",
           content: "",
-          function_call: functionCall,
-        },
-        functionMessage,
-      ];
+          tool_calls: [toolCall],
+        });
+        toolMessages.push(toolMessage);
+      }
+      currentMessages = [...currentMessages, ...toolMessages];
     } else {
-      // No function call, finish
-      functionCallDetected = false;
+      // No tool call, finish
+      toolCallDetected = false;
     }
-  } while (functionCallDetected);
+  } while (toolCallDetected);
 }
