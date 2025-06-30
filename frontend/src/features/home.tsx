@@ -1,5 +1,4 @@
-import { useRef, useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { useEffect, useRef, useState } from "react";
 import Header from "../components/header";
 import { useWebsocket } from "../hooks/use-websocket";
 import type { Turn } from "./conversation";
@@ -8,45 +7,86 @@ import UserInput from "./user-input";
 
 export default function Home() {
   const [turns, setTurns] = useState<Turn[]>([]);
-  const threadIdRef = useRef(uuidv4());
-  const conversationRef = useRef<{ scrollToBottom: () => void }>(null);
+  const [threadId, setThreadId] = useState<string | undefined>(undefined);
+  const homeContainerRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
 
-  const { isConnected, sendMessage } = useWebsocket<string, string>({
-    endpoint: `/api/assistant/${threadIdRef.current}`,
-    onMessage: handleMessage,
-  });
+  const { isConnected, sendMessage: rawSendMessage } = useWebsocket<{ userMessage: string; threadId?: string }, string>(
+    {
+      endpoint: "/ws/assistant",
+      onMessage: handleMessage,
+    }
+  );
+
+  // Wrap sendMessage to include threadId if present
+  const sendMessage = (msg: { userMessage: string; threadId: string }) => {
+    rawSendMessage({
+      userMessage: msg.userMessage,
+      ...(threadId ? { threadId } : {}),
+    });
+  };
+
+  // Scroll to bottom when turns change, if autoScroll is true
+  useEffect(() => {
+    if (autoScroll && homeContainerRef.current) {
+      homeContainerRef.current.scrollTop = homeContainerRef.current.scrollHeight;
+    }
+  }, [turns, autoScroll]);
+
+  // Handler to track if user is at the bottom
+  const handleScroll = () => {
+    const ccr = homeContainerRef.current;
+    if (!ccr) return;
+    const isAtBottom = ccr.scrollHeight - ccr.scrollTop - ccr.clientHeight < 2;
+    setAutoScroll(isAtBottom);
+  };
+
+  // Expose scrollToBottom for UserInput
+  const scrollToBottom = () => {
+    if (homeContainerRef.current) {
+      homeContainerRef.current.scrollTop = homeContainerRef.current.scrollHeight;
+    }
+  };
 
   return (
-    <div className="flex w-screen items-center h-screen flex-col p-15 bg-gray-200" id="home-container">
+    <div
+      ref={homeContainerRef}
+      className="flex w-screen items-center min-h-screen flex-col px-15 pt-15 pb-35 bg-gray-200 overflow-y-auto"
+      id="home-container"
+      onScroll={handleScroll}
+    >
       <Header />
       <div
         id="conversation-container"
-        className="w-[768px] flex flex-col h-full"
+        className="w-[768px] flex flex-col"
         style={{
           background: "linear-gradient(to bottom, #d1d5db 0%, #e5e7eb 60%, transparent 80%)",
         }}
       >
-        <Conversation ref={conversationRef} turns={turns} />
+        <Conversation turns={turns} />
         <UserInput
           sendMessage={sendMessage}
           isConnected={isConnected}
           setTurns={setTurns}
-          scrollToBottom={() => conversationRef.current?.scrollToBottom()}
+          scrollToBottom={scrollToBottom}
         />
       </div>
     </div>
   );
 
   function handleMessage(msg: string) {
-    let parsed: { type: string; data?: string };
+    let parsed: { type: string; value?: string; threadId?: string };
     try {
       parsed = JSON.parse(msg);
     } catch {
       throw new Error("Turn is not a valid JSON: " + msg);
     }
+    if (parsed.threadId && !threadId) {
+      setThreadId(parsed.threadId);
+    }
     if (parsed.type === "chunk") {
       setTurns((prevTurns) => {
-        const chunk: string = parsed.data ?? "";
+        const chunk: string = parsed.value ?? "";
         const lastTurn = prevTurns[prevTurns.length - 1];
         const newAssistantTurn: Turn = { role: "assistant", content: chunk };
         // If last message is user, start new assistant turn
@@ -54,12 +94,7 @@ export default function Home() {
           return [...prevTurns, newAssistantTurn];
         } else {
           // Otherwise, append the chunk to assistant's (current) turn
-          return [
-            // Create a shallow copy of the previous turns, excluding the last turn (which is the assistant's current turn)
-            ...prevTurns.slice(0, -1),
-            // Add a shallow copy of the last turn, with the content updated with the new chunk
-            { ...lastTurn, content: lastTurn.content + chunk },
-          ];
+          return [...prevTurns.slice(0, -1), { ...lastTurn, content: lastTurn.content + chunk }];
         }
       });
     }

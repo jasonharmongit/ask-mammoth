@@ -31,14 +31,17 @@ export function useWebsocket<TypeSend, TypeReceive>(
 
     ws.onopen = () => {
       setIsConnected(true);
+      console.log("WebSocket connected");
       props.onOpen?.();
     };
     ws.onclose = () => {
       setIsConnected(false);
+      console.log("WebSocket closed");
       props.onClose?.();
     };
     ws.onerror = (e) => {
       setIsConnected(false);
+      console.log("WebSocket error", e);
       props.onError?.(e);
     };
     ws.onmessage = (event) => {
@@ -55,6 +58,7 @@ export function useWebsocket<TypeSend, TypeReceive>(
       ws.close();
       wsRef.current = null;
       setIsConnected(false);
+      console.log("WebSocket disconnected");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.endpoint]);
@@ -72,5 +76,5 @@ export function useWebsocket<TypeSend, TypeReceive>(
 function getWebsocketBaseUrl() {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   // TODO: Change for production host
-  return `${protocol}://localhost:8000`;
+  return `${protocol}://localhost:3000`;
 }

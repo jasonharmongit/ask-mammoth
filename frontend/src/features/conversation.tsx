@@ -1,5 +1,4 @@
-import type { ForwardedRef } from "react";
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import type { RefObject } from "react";
 import ReactMarkdown from "react-markdown";
 
 export type Turn = {
@@ -8,48 +7,15 @@ export type Turn = {
   referenceBlockIds?: string[];
 };
 
-type ConversationHandle = {
-  scrollToBottom: () => void;
-};
-
 type ConversationProps = {
   turns: Turn[];
+  bottomRef?: RefObject<HTMLDivElement | null>;
 };
 
-const Conversation = forwardRef<ConversationHandle, ConversationProps>(function Conversation(
-  { turns },
-  ref: ForwardedRef<ConversationHandle>
-) {
-  const conversationContainerRef = useRef<HTMLDivElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-
-  // Expose scrollToBottom to parent
-  useImperativeHandle(ref, () => ({
-    scrollToBottom: () => {
-      if (conversationContainerRef.current) {
-        conversationContainerRef.current.scrollTop = conversationContainerRef.current.scrollHeight;
-      }
-    },
-  }));
-
-  // Smart auto-scroll: only scroll if user is at the bottom
-  useEffect(() => {
-    if (autoScroll && conversationContainerRef.current) {
-      conversationContainerRef.current.scrollTop = conversationContainerRef.current.scrollHeight;
-    }
-  }, [turns, autoScroll]);
-
-  // Handler to track if user is at the bottom
-  const handleScroll = () => {
-    const ccr = conversationContainerRef.current;
-    if (!ccr) return;
-    const isAtBottom = ccr.scrollHeight - ccr.scrollTop - ccr.clientHeight < 2;
-    setAutoScroll(isAtBottom);
-  };
-
+const Conversation = ({ turns, bottomRef }: ConversationProps) => {
   const userTurn = (turn: Turn, i: number) => {
     return (
-      <div key={i} className="bg-accent flex flex-col gap-2 rounded border p-2">
+      <div key={i} className="bg-gray-400 flex flex-col gap-2 shadow-md rounded-lg p-2">
         {turn.content}
       </div>
     );
@@ -67,15 +33,11 @@ const Conversation = forwardRef<ConversationHandle, ConversationProps>(function 
   };
 
   return (
-    <div
-      ref={conversationContainerRef}
-      className="flex w-full flex-1 flex-col gap-6 overflow-y-auto"
-      id="conversation-container"
-      onScroll={handleScroll}
-    >
+    <div className="flex w-full flex-col gap-6 p-4" id="conversation-container">
       {turns.map((turn, i) => (turn.role === "user" ? userTurn(turn, i) : assistantTurn(turn, i)))}
+      <div ref={bottomRef} />
     </div>
   );
-});
+};
 
 export default Conversation;

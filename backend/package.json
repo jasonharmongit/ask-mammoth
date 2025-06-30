@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx ts-node index.ts"
   },
   "type": "module",
   "keywords": [],
@@ -26,6 +27,7 @@
     "@types/express": "5.0.3",
     "@types/jsonwebtoken": "9.0.10",
     "@types/ws": "8.18.1",
+    "ts-node": "10.9.2",
     "typescript": "5.8.3"
   }
 }

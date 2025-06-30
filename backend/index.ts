@@ -3,15 +3,24 @@ import cors from "cors";
 import "dotenv/config";
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
+import { existsSync } from "fs";
 import type { IncomingMessage } from "http";
 import { createServer } from "http";
 import jwt from "jsonwebtoken";
+import path from "path";
+import { fileURLToPath } from "url";
 import { WebSocket, WebSocketServer } from "ws";
-import { streamAssistantResponse } from "./oracle";
+import { streamAssistantResponse } from "./oracle.ts";
 
 const app = express();
 const port = 3000;
 const server = createServer(app);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const oraclePath = path.join(__dirname, "oracle.ts");
+console.log("oracle.ts exists:", existsSync(oraclePath), "at", oraclePath);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -68,16 +77,14 @@ const wss = new WebSocketServer({ server, path: "/ws/assistant" });
 
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   ws.on("message", async (data: Buffer) => {
+    console.log("message received:", data.toString());
     try {
-      // Expecting JSON: { userMessage: string, threadId: string }
+      // Expecting JSON: { userMessage: string, threadId?: string }
       const { userMessage, threadId } = JSON.parse(data.toString());
-      if (!threadId) {
-        ws.send(JSON.stringify({ type: "error", error: "Missing threadId in request" }));
-        return;
-      }
+      console.log("Calling streamAssistantResponse", { userMessage, threadId });
       await streamAssistantResponse({
         userMessage,
-        threadId,
+        threadId, // may be undefined
         onDelta: (delta) => {
           ws.send(JSON.stringify(delta));
         },
