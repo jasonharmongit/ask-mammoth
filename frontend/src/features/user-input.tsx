@@ -1,10 +1,9 @@
 import { ArrowUp } from "@carbon/icons-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { v4 as uuidv4 } from "uuid";
 import type { Turn } from "./conversation";
 
 type UserInputProps = {
-  sendMessage: (msg: { userMessage: string; threadId: string }) => void;
+  sendMessage: (msg: { history: Turn[] }) => void;
   isConnected: boolean;
   setTurns: Dispatch<SetStateAction<Turn[]>>;
   scrollToBottom: () => void;
@@ -55,8 +54,11 @@ export default function UserInput({ sendMessage, isConnected, setTurns, scrollTo
     };
 
     if (input.trim()) {
-      setTurns((prev) => [...prev, userTurn]);
-      sendMessage({ userMessage: input, threadId: uuidv4() });
+      setTurns((prevTurns) => {
+        const newTurns = [...prevTurns, userTurn];
+        sendMessage({ history: newTurns });
+        return newTurns;
+      });
       setInput("");
       setTimeout(scrollToBottom, 200);
     }

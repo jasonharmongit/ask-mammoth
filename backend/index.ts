@@ -77,12 +77,16 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   ws.on("message", async (data: Buffer) => {
     console.log("message received:", data.toString());
     try {
-      // Expecting JSON: { userMessage: string, history: Turn[] }
-      const { userMessage, history } = JSON.parse(data.toString());
-      console.log("Calling streamAssistantResponse", { userMessage, history });
+      // Expecting JSON: { history: Turn[] }
+      const { history } = JSON.parse(data.toString());
+      if (!history || history.length === 0) throw new Error("No history provided");
+      const userTurn = history[history.length - 1];
+      const context = history.slice(0, -1);
+      if (userTurn.role !== "user") throw new Error("Last turn must be a user message");
+      console.log("Calling streamAssistantResponse", { userTurn, context });
       const result = await streamAssistantResponse({
-        userMessage,
-        history,
+        userMessage: userTurn.content,
+        history: context,
         onDelta: (delta) => {
           ws.send(JSON.stringify(delta));
         },

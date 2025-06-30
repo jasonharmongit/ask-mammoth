@@ -12,22 +12,24 @@ export default function Home() {
   const [autoScroll, setAutoScroll] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { isConnected, sendMessage: rawSendMessage } = useWebsocket<{ userMessage: string; history: Turn[] }, string>({
+  const { isConnected, sendMessage: rawSendMessage } = useWebsocket<{ history: Turn[] }, string>({
     endpoint: "/ws/assistant",
     onMessage: handleMessage,
   });
 
-  // Wrap sendMessage to forward userMessage and history
-  const sendMessage = (msg: { userMessage: string; history: Turn[] }) => {
+  useEffect(() => {
+    console.log("Turns", turns);
+  }, [turns]);
+
+  // Wrap sendMessage to forward only history
+  const sendMessage = (msg: { history: Turn[] }) => {
     rawSendMessage(msg);
   };
 
   // Scroll to bottom when turns change, if autoScroll is true
-  console.log("Auto scroll", autoScroll);
   useEffect(() => {
     if (autoScroll && bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
-      console.log("Scrolled to bottom (bottomRef)");
     }
   }, [turns, autoScroll]);
 
@@ -66,7 +68,7 @@ export default function Home() {
           background: "linear-gradient(to bottom, #d1d5db 0%, #e5e7eb 60%, transparent 80%)",
         }}
       >
-        <Conversation turns={turns} bottomRef={bottomRef} />
+        <Conversation turns={turns} bottomRef={bottomRef} setTurns={setTurns} />
         <UserInput
           sendMessage={sendMessage}
           isConnected={isConnected}

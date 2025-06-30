@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
@@ -11,12 +11,12 @@ export type Turn = {
 type ConversationProps = {
   turns: Turn[];
   bottomRef?: RefObject<HTMLDivElement | null>;
+  setTurns: Dispatch<SetStateAction<Turn[]>>;
 };
 
-const Conversation = ({ turns: initialTurns, bottomRef }: ConversationProps) => {
+const Conversation = ({ turns, bottomRef, setTurns }: ConversationProps) => {
   const [isFetching, setIsFetching] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [turns, setTurns] = useState<Turn[]>(initialTurns);
 
   useEffect(() => {
     const fetchTimer: number = window.setTimeout(() => {
@@ -37,7 +37,7 @@ const Conversation = ({ turns: initialTurns, bottomRef }: ConversationProps) => 
     return () => {
       clearTimeout(fetchTimer);
     };
-  }, []);
+  }, [setTurns]);
 
   const userTurn = (turn: Turn, i: number) => {
     return (
@@ -80,7 +80,7 @@ function Loader({ text }: { text: string }) {
       <div className="mb-2">
         <span className="inline-block w-6 h-6 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
       </div>
-      <div className="text-lg">{text}</div>
+      <div className="text-lg whitespace-pre-line">{text}</div>
     </div>
   );
 }
