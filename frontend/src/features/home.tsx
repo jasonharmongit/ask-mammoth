@@ -56,14 +56,14 @@ export default function Home() {
   return (
     <div
       ref={homeContainerRef}
-      className="flex w-screen items-center min-h-screen flex-col px-15 pt-15 pb-35 bg-gray-200 overflow-y-auto"
+      className="flex w-screen items-center h-screen md:pt-15 flex-col bg-gray-200 overflow-y-auto"
       id="home-container"
       onScroll={handleScroll}
     >
       <Header />
       <div
         id="conversation-container"
-        className="w-[768px] flex flex-col"
+        className="w-full max-w-[768px] flex flex-col"
         style={{
           background: "linear-gradient(to bottom, #d1d5db 0%, #e5e7eb 60%, transparent 80%)",
         }}

@@ -32,8 +32,8 @@ const Conversation = ({ turns, bottomRef, setTurns }: ConversationProps) => {
               "Totally unbiased, 100% real analysis complete.\n\nCandidates Analyzed:\nAdam Augustine\nAhmer Farooq\nGeoffrey Kee\nJason Harmon\nShailaja Shah\nTanner Young\n\n\nWould you like me to give my recommendation? Or would you like a foretelling of one of the candidates, specifically?",
           },
         ]);
-      }, 1000);
-    }, 1000);
+      }, 2000);
+    }, 2000);
     return () => {
       clearTimeout(fetchTimer);
     };
@@ -59,7 +59,7 @@ const Conversation = ({ turns, bottomRef, setTurns }: ConversationProps) => {
   };
 
   return (
-    <div className="flex w-full flex-col gap-6 p-4" id="conversation-container">
+    <div className="flex w-full flex-col gap-6 p-2 md:p-4" id="conversation-container">
       {isFetching ? (
         <Loader text="Fetching candidate data..." />
       ) : isAnalyzing ? (
@@ -70,6 +70,7 @@ const Conversation = ({ turns, bottomRef, setTurns }: ConversationProps) => {
           <div ref={bottomRef} />
         </>
       )}
+      <div className="h-20" />
     </div>
   );
 };

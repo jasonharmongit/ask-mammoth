@@ -25,14 +25,18 @@ button {
   }
 }
 
-.magic {
-  @apply relative rounded-lg bg-red-500 p-6;
+@keyframes gradient-pan {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
 }
-.magic::after {
-  @apply absolute inset-0 bg-yellow-500;
-  content: "";
-  border-radius: inherit;
-  filter: blur(2em);
+
+.animate-gradient-pan {
+  background-size: 200% 100%;
+  animation: gradient-pan 8s linear infinite;
 }
 
 @layer utilities {

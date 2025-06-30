@@ -29,13 +29,13 @@ export default function Login() {
       Now, for the first time ever, you won't just <strong>find</strong> potential candidates.
       <br />
       <br />
-      <strong className="text-2xl">You'll glimpse into a future with them.</strong>
+      <strong className="text-xl md:text-2xl">You'll glimpse into a future with them.</strong>
     </>
   );
 
   return (
     <div className="flex w-screen h-screen items-center justify-center flex-col gap-8" id="login container">
-      <div className="font-jetbrains text-lg text-center whitespace-pre-line w-1/2">
+      <div className="font-jetbrains text-base md:text-lg text-center whitespace-pre-line w-3/4 md:w-1/2">
         <p>{message}</p>
       </div>
       <form onSubmit={handleLogin} className="flex flex-col gap-2">

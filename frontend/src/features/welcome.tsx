@@ -14,11 +14,15 @@ export default function Welcome() {
   // Flatten message to string for typewriter effect
   const flatMessage = messageNodes.map((node) => (typeof node === "string" ? node : "really")).join("");
   const [charIndex, setCharIndex] = useState(0);
+  const [showButton, setShowButton] = useState(false);
 
   useEffect(() => {
     if (charIndex < flatMessage.length) {
-      const timeout = setTimeout(() => setCharIndex(charIndex + 1), 50);
+      const timeout = setTimeout(() => setCharIndex(charIndex + 1), 60);
       return () => clearTimeout(timeout);
+    }
+    if (charIndex === flatMessage.length) {
+      setShowButton(true);
     }
   }, [charIndex, flatMessage.length]);
 
@@ -44,10 +48,14 @@ export default function Welcome() {
 
   return (
     <div className="flex w-screen h-screen items-center justify-center flex-col gap-8" id="welcome container">
-      <div className="font-jetbrains text-2xl text-center whitespace-pre-line">{renderTypedMessage()}</div>
+      <div className="font-jetbrains text-xl md:text-2xl w-3/4 md:w-1/2 text-center whitespace-pre-line">
+        {renderTypedMessage()}
+      </div>
       {charIndex >= flatMessage.length && (
         <button
-          className="border font-jetbrains text-2xl hover:bg-black hover:text-white"
+          className={`border font-jetbrains text-2xl shadow-xl hover:bg-black hover:text-white transition-opacity duration-3000 ${
+            showButton ? "opacity-100" : "opacity-0"
+          }`}
           onClick={() => navigate("/home")}
         >
           Ask Mammoth

@@ -13,9 +13,9 @@ export default function UserInput({ sendMessage, isConnected, setTurns, scrollTo
   const [input, setInput] = useState("");
 
   return (
-    <div className="fixed bottom-0 pb-15 bg-gray-200">
+    <div className="fixed bottom-0 w-full md:pb-15 bg-gray-200">
       <div
-        className="bg-accent flex flex-col items-center rounded-xl bg-gray-400 h-20 w-[768px] shadow-lg hover:shadow-2xl focus-within:shadow-xl"
+        className="bg-accent flex flex-col items-center rounded-t-xl md:rounded-b-xl bg-gray-400 h-20 w-full md:w-[768px] shadow-xl hover:shadow-2xl focus-within:shadow-xl"
         id="user-input-container"
       >
         <textarea
