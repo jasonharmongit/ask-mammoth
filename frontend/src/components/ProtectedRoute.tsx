@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/authenticate", {
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/authenticate`, {
       method: "GET",
       credentials: "include",
     }).then((res) => {

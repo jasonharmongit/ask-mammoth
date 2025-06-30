@@ -22,9 +22,22 @@ const oraclePath = path.join(__dirname, "oracle.ts");
 
 app.use(express.json());
 app.use(cookieParser());
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://ask-mammoth-y8t2-p2jd1vlt9-jason-harmons-projects-fcf42a6f.vercel.app",
+  "https://ask-mammoth.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );

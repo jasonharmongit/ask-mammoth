@@ -74,7 +74,5 @@ export function useWebsocket<TypeSend, TypeReceive>(
 }
 
 function getWebsocketBaseUrl() {
-  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  // TODO: Change for production host
-  return `${protocol}://localhost:3000`;
+  return import.meta.env.VITE_WS_BASE_URL;
 }
