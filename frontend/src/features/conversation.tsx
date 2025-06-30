@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 export type Turn = {
@@ -13,6 +14,22 @@ type ConversationProps = {
 };
 
 const Conversation = ({ turns, bottomRef }: ConversationProps) => {
+  const [isFetching, setIsFetching] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  useEffect(() => {
+    const fetchTimer: number = window.setTimeout(() => {
+      setIsFetching(false);
+      setIsAnalyzing(true);
+      window.setTimeout(() => {
+        setIsAnalyzing(false);
+      }, 3000);
+    }, 3000);
+    return () => {
+      clearTimeout(fetchTimer);
+    };
+  }, []);
+
   const userTurn = (turn: Turn, i: number) => {
     return (
       <div key={i} className="bg-gray-400 flex flex-col gap-2 shadow-md rounded-lg p-2">
@@ -34,10 +51,29 @@ const Conversation = ({ turns, bottomRef }: ConversationProps) => {
 
   return (
     <div className="flex w-full flex-col gap-6 p-4" id="conversation-container">
-      {turns.map((turn, i) => (turn.role === "user" ? userTurn(turn, i) : assistantTurn(turn, i)))}
-      <div ref={bottomRef} />
+      {isFetching ? (
+        <Loader text="Fetching candidate data..." />
+      ) : isAnalyzing ? (
+        <Loader text="Analyzing candidate data..." />
+      ) : (
+        <>
+          {turns.map((turn, i) => (turn.role === "user" ? userTurn(turn, i) : assistantTurn(turn, i)))}
+          <div ref={bottomRef} />
+        </>
+      )}
     </div>
   );
 };
+
+function Loader({ text }: { text: string }) {
+  return (
+    <div className="flex justify-center mb-30 gap-2">
+      <div className="mb-2">
+        <span className="inline-block w-6 h-6 border-4 border-gray-300 border-t-black rounded-full animate-spin" />
+      </div>
+      <div className="text-lg">{text}</div>
+    </div>
+  );
+}
 
 export default Conversation;
