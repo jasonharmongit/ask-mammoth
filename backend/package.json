@@ -17,13 +17,15 @@
     "dotenv": "17.0.0",
     "express": "5.1.0",
     "jsonwebtoken": "9.0.2",
-    "openai": "5.8.2"
+    "openai": "5.8.2",
+    "ws": "8.18.3"
   },
   "devDependencies": {
     "@types/cookie-parser": "1.4.9",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.3",
     "@types/jsonwebtoken": "9.0.10",
+    "@types/ws": "8.18.1",
     "typescript": "5.8.3"
   }
 }

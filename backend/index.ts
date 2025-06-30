@@ -3,11 +3,15 @@ import cors from "cors";
 import "dotenv/config";
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
+import type { IncomingMessage } from "http";
+import { createServer } from "http";
 import jwt from "jsonwebtoken";
-import OpenAI from "openai";
+import { WebSocket, WebSocketServer } from "ws";
+import { streamAssistantResponse } from "./oracle";
 
 const app = express();
 const port = 3000;
+const server = createServer(app);
 
 app.use(express.json());
 app.use(cookieParser());
@@ -17,8 +21,6 @@ app.use(
     credentials: true,
   })
 );
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
@@ -61,19 +63,32 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-app.post("/api/assistant", requireAuth, async (req: Request, res: Response) => {
-  const { messages } = req.body;
-  try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-nano-2025-04-14",
-      messages,
-    });
-    res.json(completion);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+// --- WebSocket setup for assistant streaming ---
+const wss = new WebSocketServer({ server, path: "/ws/assistant" });
+
+wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
+  ws.on("message", async (data: Buffer) => {
+    try {
+      // Expecting JSON: { userMessage: string, threadId: string }
+      const { userMessage, threadId } = JSON.parse(data.toString());
+      if (!threadId) {
+        ws.send(JSON.stringify({ type: "error", error: "Missing threadId in request" }));
+        return;
+      }
+      await streamAssistantResponse({
+        userMessage,
+        threadId,
+        onDelta: (delta) => {
+          ws.send(JSON.stringify(delta));
+        },
+      });
+      ws.send(JSON.stringify({ type: "done" }));
+    } catch (err: any) {
+      ws.send(JSON.stringify({ type: "error", error: err.message }));
+    }
+  });
 });
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
