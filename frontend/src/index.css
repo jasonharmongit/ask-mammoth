@@ -13,7 +13,7 @@ h1 {
 }
 
 button {
-  @apply cursor-pointer rounded p-2;
+  @apply cursor-pointer p-2;
 }
 
 @keyframes rainbow-radial-move {

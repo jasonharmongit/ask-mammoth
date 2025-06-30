@@ -1,3 +1,4 @@
+import { ArrowUp } from "@carbon/icons-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
@@ -38,17 +39,20 @@ export default function Login() {
       <div className="font-jetbrains text-base md:text-lg text-center whitespace-pre-line w-3/4 md:w-1/2">
         <p>{message}</p>
       </div>
-      <form onSubmit={handleLogin} className="flex flex-col gap-2">
+      <form onSubmit={handleLogin} className="flex">
         <input
-          type="password"
+          type="text"
           placeholder="Enter access token"
           value={token}
           onChange={(e) => setToken(e.target.value)}
           required
-          className="border p-2 border-black"
+          className="text-center border p-2 border-black rounded-l-lg"
         />
-        {error && <div className="text-red-500">{error}</div>}
+        <button type="submit" className=" border p-2 rounded-r-lg border-l-0 bg-gray-300">
+          <ArrowUp />
+        </button>
       </form>
+      {error && <div className="text-red-500">{error}</div>}
     </div>
   );
 }
