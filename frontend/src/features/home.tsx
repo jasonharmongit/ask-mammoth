@@ -10,6 +10,7 @@ export default function Home() {
   const [threadId, setThreadId] = useState<string | undefined>(undefined);
   const homeContainerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const { isConnected, sendMessage: rawSendMessage } = useWebsocket<{ userMessage: string; threadId?: string }, string>(
     {
@@ -27,9 +28,11 @@ export default function Home() {
   };
 
   // Scroll to bottom when turns change, if autoScroll is true
+  console.log("Auto scroll", autoScroll);
   useEffect(() => {
-    if (autoScroll && homeContainerRef.current) {
-      homeContainerRef.current.scrollTop = homeContainerRef.current.scrollHeight;
+    if (autoScroll && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      console.log("Scrolled to bottom (bottomRef)");
     }
   }, [turns, autoScroll]);
 
@@ -38,13 +41,18 @@ export default function Home() {
     const ccr = homeContainerRef.current;
     if (!ccr) return;
     const isAtBottom = ccr.scrollHeight - ccr.scrollTop - ccr.clientHeight < 2;
-    setAutoScroll(isAtBottom);
+    // Only re-enable autoScroll if the user scrolls to the bottom
+    if (isAtBottom && !autoScroll) {
+      setAutoScroll(true);
+    } else if (!isAtBottom && autoScroll) {
+      setAutoScroll(false);
+    }
   };
 
   // Expose scrollToBottom for UserInput
   const scrollToBottom = () => {
-    if (homeContainerRef.current) {
-      homeContainerRef.current.scrollTop = homeContainerRef.current.scrollHeight;
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
@@ -63,7 +71,7 @@ export default function Home() {
           background: "linear-gradient(to bottom, #d1d5db 0%, #e5e7eb 60%, transparent 80%)",
         }}
       >
-        <Conversation turns={turns} />
+        <Conversation turns={turns} bottomRef={bottomRef} />
         <UserInput
           sendMessage={sendMessage}
           isConnected={isConnected}
