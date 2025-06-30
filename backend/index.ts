@@ -9,7 +9,7 @@ import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
 import { WebSocket, WebSocketServer } from "ws";
-import { streamAssistantResponse } from "./oracle.ts";
+import { streamAssistantResponse } from "./oracle.js";
 
 const app = express();
 const port = 3000;
