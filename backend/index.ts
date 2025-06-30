@@ -3,7 +3,6 @@ import cors from "cors";
 import "dotenv/config";
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
-import fs from "fs";
 import type { IncomingMessage } from "http";
 import { createServer } from "http";
 import jwt from "jsonwebtoken";
@@ -32,15 +31,6 @@ app.use(
 
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret";
-
-// Write Google service account JSON from environment variable (if present)
-if (process.env.GOOGLE_SERVICE_ACCOUNT_BASE64) {
-  fs.writeFileSync(
-    "/tmp/service-account.json",
-    Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_BASE64, "base64").toString("utf-8")
-  );
-  process.env.GOOGLE_APPLICATION_CREDENTIALS = "/tmp/service-account.json";
-}
 
 // Authentication endpoint
 app.post("/api/authenticate", (req: Request, res: Response) => {
