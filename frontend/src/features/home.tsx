@@ -18,7 +18,7 @@ export default function Home() {
   });
 
   useEffect(() => {
-    console.log("Turns", turns);
+    // console.log("Turns", turns);
   }, [turns]);
 
   // Wrap sendMessage to forward only history

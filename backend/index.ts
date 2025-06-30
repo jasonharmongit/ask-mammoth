@@ -75,7 +75,7 @@ const wss = new WebSocketServer({ server, path: "/ws/assistant" });
 
 wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   ws.on("message", async (data: Buffer) => {
-    console.log("message received:", data.toString());
+    // console.log("message received:", data.toString());
     try {
       // Expecting JSON: { history: Turn[] }
       const { history } = JSON.parse(data.toString());
@@ -98,5 +98,5 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
 });
 
 server.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  // console.log(`Server running at http://localhost:${port}`);
 });

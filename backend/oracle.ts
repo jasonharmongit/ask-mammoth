@@ -25,12 +25,17 @@ async function getInstructions() {
 // Tool: fetchCandidateProfile
 async function fetchCandidateProfile({ firstName }: { firstName: string }) {
   const safeName = firstName.toLowerCase();
+  if (safeName === "jason") {
+    return "You already know about Jason's profile.";
+  }
   const fileName = `${safeName}.md`;
   const file = storage.bucket(BUCKET_NAME).file(fileName);
   try {
     const [contents] = await file.download();
+    // console.log("[oracle] fetched profile for", firstName, "->", contents.toString("utf-8"));
     return contents.toString("utf-8");
   } catch (err) {
+    console.error("[oracle] error fetching profile for", firstName, err);
     return `Profile for ${firstName} not found.`;
   }
 }
@@ -76,33 +81,9 @@ export async function streamAssistantResponse({
     },
   ];
 
-  // Helper to handle tool calls
-  async function handleToolCall(toolCall: any) {
-    if (toolCall.function && toolCall.function.name === "fetchCandidateProfile") {
-      const args = toolCall.function.arguments;
-      const parsedArgs = typeof args === "string" ? JSON.parse(args) : args;
-      const result = await fetchCandidateProfile(parsedArgs);
-      return {
-        role: "tool",
-        tool_call_id: toolCall.id,
-        name: toolCall.function.name,
-        content: result,
-      };
-    }
-    return {
-      role: "tool",
-      tool_call_id: toolCall.id,
-      name: toolCall.function?.name || "unknown",
-      content: "Tool not implemented.",
-    };
-  }
-
   // Main loop: handle tool calls if present
-  let toolCalls = null;
-  let toolCallDetected = false;
   let currentMessages = messages;
-
-  do {
+  while (true) {
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: currentMessages,
@@ -111,53 +92,101 @@ export async function streamAssistantResponse({
       stream: true,
     });
 
-    toolCalls = [];
-    toolCallDetected = false;
-    let toolCallsMap: Record<string, any> = {};
+    // Accumulate tool call arguments as they stream in, using only index
+    let toolCallsMap: Record<number, any> = {}; // index -> tool call accumulator
+    let toolCallDetected = false;
+    let finishReason: string | null = null;
+    let gotContent = false;
 
     for await (const chunk of response) {
-      console.log("[oracle] raw chunk:", JSON.stringify(chunk, null, 2));
+      // console.log("[oracle] chunk:", chunk);
       const choice = chunk.choices[0];
+      // console.log("[oracle] delta:", JSON.stringify(choice.delta, null, 2));
       if (choice.delta && choice.delta.tool_calls) {
+        // console.log("[oracle] tool_calls detected");
         toolCallDetected = true;
-        // Accumulate tool calls (array)
         for (const toolCall of choice.delta.tool_calls) {
-          if (toolCall.id && toolCall.function) {
-            if (!toolCallsMap[toolCall.id]) {
-              toolCallsMap[toolCall.id] = { ...toolCall, function: { ...toolCall.function, arguments: "" } };
-            }
-            if (toolCall.function.arguments) {
-              toolCallsMap[toolCall.id].function.arguments += toolCall.function.arguments;
-            }
+          const idx = toolCall.index;
+          if (!toolCallsMap[idx]) {
+            // First chunk for this tool call: initialize
+            toolCallsMap[idx] = {
+              ...toolCall,
+              function: {
+                ...toolCall.function,
+                arguments: "",
+              },
+            };
+          }
+          // console.log("new toolcallmap", toolCallsMap);
+          if (toolCall.function && toolCall.function.arguments) {
+            toolCallsMap[idx].function.arguments += toolCall.function.arguments;
+            // console.log("[oracle] accumulating for index", idx, ":", toolCallsMap[idx].function.arguments);
           }
         }
       } else if (choice.delta && choice.delta.content) {
+        gotContent = true;
         onDelta({ type: "chunk", value: choice.delta.content });
-        console.log("[oracle] content:", choice.delta.content);
+        // console.log("[oracle] content:", choice.delta.content);
       } else {
-        console.log("[oracle] no delta");
+        // console.log("[oracle] no delta");
+      }
+      if (choice.finish_reason) {
+        finishReason = choice.finish_reason;
       }
     }
 
-    // Convert toolCallsMap to array
-    toolCalls = Object.values(toolCallsMap);
+    // If we got content, we're done (no tool call needed)
+    if (gotContent) {
+      break;
+    }
 
-    if (toolCallDetected && toolCalls.length > 0) {
-      // Handle each tool call and loop again with the tool result(s)
+    // If we have tool calls to process, do so
+    const toolCalls = Object.values(toolCallsMap);
+    if ((toolCallDetected && toolCalls.length > 0) || finishReason === "tool_calls") {
+      // console.log("[oracle] toolCalls:", toolCalls);
+      // console.log("[oracle] toolCalls detected");
       const toolMessages = [];
       for (const toolCall of toolCalls) {
-        const toolMessage = await handleToolCall(toolCall);
+        let parsedArgs: any = {};
+        try {
+          // console.log("[oracle] final arguments for index", toolCall.index, ":", toolCall.function.arguments);
+          parsedArgs = toolCall.function.arguments ? JSON.parse(toolCall.function.arguments) : {};
+        } catch (e) {
+          console.error("[oracle] Failed to parse tool call arguments:", toolCall.function.arguments, e);
+        }
+        // Actually call the tool
+        let toolResult: string;
+        if (toolCall.function.name === "fetchCandidateProfile") {
+          // console.log("[oracle] fetching profile for", parsedArgs.firstName);
+          toolResult = await fetchCandidateProfile(parsedArgs);
+        } else {
+          toolResult = "Tool not implemented.";
+        }
+        // console.log(`[oracle] Tool '${toolCall.function.name}' called with`, parsedArgs, "->", toolResult);
+        // Send the tool result back to OpenAI as a tool message
         toolMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id, // still send id back to OpenAI
+          content: toolResult,
+        });
+      }
+      // Add the tool call(s) and their result(s) to the message history
+      currentMessages = [
+        ...currentMessages,
+        // The assistant turn that triggered the tool call(s)
+        {
           role: "assistant",
           content: "",
-          tool_calls: [toolCall],
-        });
-        toolMessages.push(toolMessage);
-      }
-      currentMessages = [...currentMessages, ...toolMessages];
+          tool_calls: toolCalls,
+        },
+        // The tool result(s)
+        ...toolMessages,
+      ];
+      // Continue the loop to get the assistant's final response
+      continue;
     } else {
-      // No tool call, finish
-      toolCallDetected = false;
+      // No tool call, no content, nothing to do
+      break;
     }
-  } while (toolCallDetected);
+  }
 }
