@@ -49,8 +49,8 @@ app.post("/api/authenticate", (req: Request, res: Response) => {
     res.cookie("sessionToken", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 3600000,
+      sameSite: "none",
+      maxAge: 3600000 * 24 * 3,
       path: "/",
     });
     res.sendStatus(200);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -7,17 +8,17 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/authenticate`, {
-      method: "GET",
-      credentials: "include",
-    }).then((res) => {
-      if (res.ok) {
+    api
+      .get("/api/authenticate")
+      .then(() => {
         setAuthenticated(true);
-      } else {
+      })
+      .catch(() => {
         navigate("/");
-      }
-      setLoading(false);
-    });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [navigate]);
 
   if (loading) return <div>Loading...</div>;

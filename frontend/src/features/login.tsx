@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 export default function Login() {
   const [token, setToken] = useState("");
@@ -9,15 +10,14 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/authenticate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accessToken: token }),
-      credentials: "include",
-    });
-    if (res.ok) {
-      navigate("/welcome");
-    } else {
+    try {
+      const res = await api.post("/api/authenticate", { accessToken: token });
+      if (res.status === 200) {
+        navigate("/welcome");
+      } else {
+        setError("Invalid access token");
+      }
+    } catch {
       setError("Invalid access token");
     }
   };
