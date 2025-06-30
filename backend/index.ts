@@ -83,7 +83,6 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
       const userTurn = history[history.length - 1];
       const context = history.slice(0, -1);
       if (userTurn.role !== "user") throw new Error("Last turn must be a user message");
-      console.log("Calling streamAssistantResponse", { userTurn, context });
       const result = await streamAssistantResponse({
         userMessage: userTurn.content,
         history: context,

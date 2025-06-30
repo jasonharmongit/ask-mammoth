@@ -49,7 +49,7 @@ export async function streamAssistantResponse({
   userMessage: string;
   onDelta: (delta: { type: string; value: any }) => void;
   history?: Turn[];
-}): Promise<{ history: Turn[] }> {
+}): Promise<void> {
   // Prepare the conversation context
   const instructions = await getInstructions();
   const messages: any[] = [
@@ -93,7 +93,6 @@ export async function streamAssistantResponse({
   }
 
   // Main loop: handle function calls if present
-  let assistantContent = "";
   let functionCall = null;
   let functionCallDetected = false;
   let currentMessages = messages;
@@ -107,15 +106,14 @@ export async function streamAssistantResponse({
       stream: true,
     });
 
-    assistantContent = "";
     functionCall = null;
     for await (const chunk of response) {
       const choice = chunk.choices[0];
-      if (choice.finish_reason === "function_call" && choice.delta.function_call) {
+      if (choice.delta && choice.delta.tool_calls) {
         functionCallDetected = true;
-        functionCall = choice.delta.function_call;
+        functionCall = choice.delta.tool_calls[0].function;
+        console.log("[oracle] functionCall:", functionCall);
       } else if (choice.delta && choice.delta.content) {
-        assistantContent += choice.delta.content;
         onDelta({ type: "chunk", value: choice.delta.content });
       }
     }
@@ -135,10 +133,6 @@ export async function streamAssistantResponse({
     } else {
       // No function call, finish
       functionCallDetected = false;
-      // Add the assistant's response to the history
-      history = [...history, { role: "user", content: userMessage }, { role: "assistant", content: assistantContent }];
     }
   } while (functionCallDetected);
-
-  return { history };
 }
