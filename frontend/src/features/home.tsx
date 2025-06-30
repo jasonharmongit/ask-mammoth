@@ -12,19 +12,14 @@ export default function Home() {
   const [autoScroll, setAutoScroll] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const { isConnected, sendMessage: rawSendMessage } = useWebsocket<{ userMessage: string; threadId?: string }, string>(
-    {
-      endpoint: "/ws/assistant",
-      onMessage: handleMessage,
-    }
-  );
+  const { isConnected, sendMessage: rawSendMessage } = useWebsocket<{ userMessage: string; history: Turn[] }, string>({
+    endpoint: "/ws/assistant",
+    onMessage: handleMessage,
+  });
 
-  // Wrap sendMessage to include threadId if present
-  const sendMessage = (msg: { userMessage: string; threadId: string }) => {
-    rawSendMessage({
-      userMessage: msg.userMessage,
-      ...(threadId ? { threadId } : {}),
-    });
+  // Wrap sendMessage to forward userMessage and history
+  const sendMessage = (msg: { userMessage: string; history: Turn[] }) => {
+    rawSendMessage(msg);
   };
 
   // Scroll to bottom when turns change, if autoScroll is true

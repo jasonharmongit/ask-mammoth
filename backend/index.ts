@@ -77,12 +77,12 @@ wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
   ws.on("message", async (data: Buffer) => {
     console.log("message received:", data.toString());
     try {
-      // Expecting JSON: { userMessage: string, threadId?: string }
-      const { userMessage, threadId } = JSON.parse(data.toString());
-      console.log("Calling streamAssistantResponse", { userMessage, threadId });
-      await streamAssistantResponse({
+      // Expecting JSON: { userMessage: string, history: Turn[] }
+      const { userMessage, history } = JSON.parse(data.toString());
+      console.log("Calling streamAssistantResponse", { userMessage, history });
+      const result = await streamAssistantResponse({
         userMessage,
-        threadId, // may be undefined
+        history,
         onDelta: (delta) => {
           ws.send(JSON.stringify(delta));
         },
