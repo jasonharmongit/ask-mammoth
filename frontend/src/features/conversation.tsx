@@ -13,9 +13,10 @@ type ConversationProps = {
   bottomRef?: RefObject<HTMLDivElement | null>;
 };
 
-const Conversation = ({ turns, bottomRef }: ConversationProps) => {
+const Conversation = ({ turns: initialTurns, bottomRef }: ConversationProps) => {
   const [isFetching, setIsFetching] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [turns, setTurns] = useState<Turn[]>(initialTurns);
 
   useEffect(() => {
     const fetchTimer: number = window.setTimeout(() => {
@@ -23,8 +24,16 @@ const Conversation = ({ turns, bottomRef }: ConversationProps) => {
       setIsAnalyzing(true);
       window.setTimeout(() => {
         setIsAnalyzing(false);
-      }, 3000);
-    }, 3000);
+        setTurns((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              "Totally unbiased, 100% real analysis complete.\n\nCandidates Analyzed:\nAdam Augustine\nAhmer Farooq\nGeoffrey Kee\nJason Harmon\nShailaja Shah\nTanner Young\n\n\nWould you like me to give my recommendation? Or would you like a foretelling of one of the candidates, specifically?",
+          },
+        ]);
+      }, 1000);
+    }, 1000);
     return () => {
       clearTimeout(fetchTimer);
     };
@@ -42,7 +51,7 @@ const Conversation = ({ turns, bottomRef }: ConversationProps) => {
     return (
       <div
         key={i}
-        className="prose prose-neutral prose-code:bg-accent prose-code:rounded prose-code:border dark:prose-invert text-foreground max-w-none px-2 [&_h1]:my-2 [&_h2]:my-2 [&_h3]:my-2 [&_h4]:my-2 [&_h5]:my-2 [&_h6]:my-2 [&_hr]:my-2 [&_p]:my-0 [&_pre]:my-0 [&_table]:border [&_td]:border [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:px-4 [&_th]:py-2 [&_ul]:mt-1"
+        className="prose whitespace-pre-line prose-neutral prose-code:bg-accent prose-code:rounded prose-code:border dark:prose-invert text-foreground max-w-none px-2 [&_h1]:my-2 [&_h2]:my-2 [&_h3]:my-2 [&_h4]:my-2 [&_h5]:my-2 [&_h6]:my-2 [&_hr]:my-2 [&_p]:my-0 [&_pre]:my-0 [&_table]:border [&_td]:border [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:px-4 [&_th]:py-2 [&_ul]:mt-1"
       >
         <ReactMarkdown>{turn.content}</ReactMarkdown>
       </div>
@@ -54,7 +63,7 @@ const Conversation = ({ turns, bottomRef }: ConversationProps) => {
       {isFetching ? (
         <Loader text="Fetching candidate data..." />
       ) : isAnalyzing ? (
-        <Loader text="Analyzing candidate data..." />
+        <Loader text="6 candidates found. Analyzing..." />
       ) : (
         <>
           {turns.map((turn, i) => (turn.role === "user" ? userTurn(turn, i) : assistantTurn(turn, i)))}

@@ -3,7 +3,6 @@ import cors from "cors";
 import "dotenv/config";
 import type { NextFunction, Request, Response } from "express";
 import express from "express";
-import { existsSync } from "fs";
 import type { IncomingMessage } from "http";
 import { createServer } from "http";
 import jwt from "jsonwebtoken";
@@ -20,7 +19,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const oraclePath = path.join(__dirname, "oracle.ts");
-console.log("oracle.ts exists:", existsSync(oraclePath), "at", oraclePath);
 
 app.use(express.json());
 app.use(cookieParser());
