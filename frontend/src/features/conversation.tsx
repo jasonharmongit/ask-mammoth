@@ -29,7 +29,7 @@ const Conversation = ({ turns, bottomRef, setTurns }: ConversationProps) => {
           {
             role: "assistant",
             content:
-              "Totally unbiased, 100% real analysis complete.\n\nCandidates Analyzed:\nAdam Augustine\nAhmer Farooq\nGeoffrey Kee\nJason Harmon\nShailaja Shah\nTanner Young\n\n\nWould you like me to give my recommendation? Or would you like a foretelling of one of the candidates, specifically?",
+              "Totally unbiased, 100% real analysis complete.\n\nCandidates Analyzed:\nAdam Augustine\nAhmer Farooq\nGeoffrey Kee\nJason Harmon\nShailaja Shah\nTanner Young\n\n\nHello! I am the AskMammoth Oracle. My job is to help you hire the best candidate by painting a vivid picture of what it would look like to hire a given individual. I understand that you're looking to hire a new Full-Stack Engineer, and I'm here to help! I've already retrieved the data and run an analysis for the candidates above.\n\nWould you like me to give my recommendation? Or would you like a foretelling of one of the candidates, specifically?",
           },
         ]);
       }, 2000);
